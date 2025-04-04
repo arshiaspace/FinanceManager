@@ -6,6 +6,7 @@ class AuthManager:
     def __init__(self):
         self.db = Database()
 
+
     def register_user(self):
         username = input("Enter username: ")
         if self.db.user_exists(username):
@@ -18,6 +19,7 @@ class AuthManager:
         self.db.add_user(username, hashed_pw)
         print("Registration successful!")
         return True
+    
     
     def login_user(self):
         username = input("Enter username: ")

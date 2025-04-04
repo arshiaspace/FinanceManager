@@ -23,14 +23,15 @@ class Database:
                            username TEXT UNIQUE, 
                            password TEXT)''')
             
+            
             #Transaction Table
-            cursor.execute('''CREATE TABLE IF NOT EXISTS transaction
+            cursor.execute('''CREATE TABLE IF NOT EXISTS transactions
                            (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                            user_id INTEGER, 
                            type TEXT,
                            # 'income' or 'expense' category TEXT,
                            amount REAL, 
-                           date DATE, 
+                           date TEXT, 
                            description TEXT, 
                            FORIEGN KEY(user_id) REFERENCES users (id))''')
             
