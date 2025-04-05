@@ -28,21 +28,22 @@ class Database:
             cursor.execute('''CREATE TABLE IF NOT EXISTS transactions
                            (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                            user_id INTEGER, 
-                           type TEXT,
-                           # 'income' or 'expense' category TEXT,
-                           amount REAL, 
-                           date TEXT, 
+                           type TEXT CHECK(type IN ('income', 'expense')),
+                           category TEXT,
+                           amount DECIMAL(10, 2) NOT NULL, 
+                           date DATE NOT NULL, 
                            description TEXT, 
                            FORIEGN KEY(user_id) REFERENCES users (id))''')
             
             #Budget Table
             cursor.execute('''CREATE TABLE IF NOT EXISTS budget
                            (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                           user_id INTEGER, category TEXT, 
-                           amount REAL, 
-                           month INTEGER, 
-                           year INTEGER, 
-                           FOREIGN KEY(user_id) REFERENCES users(id))''')
+                           user_id INTEGER, category TEXT NOT NULL, 
+                           amount DECIMAL(10, 2) NOT NULL, 
+                           month INTEGER CHECK(month BETWEEN 1 AND 12), 
+                           year INTEGER NOT NULL, 
+                           FOREIGN KEY(user_id) REFERENCES users(id)),
+                           UNIQUE(user_id, category, month, year)''')
             
             def user_exists(self, username):
                 with self._get_cursor() as cursor:
