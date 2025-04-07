@@ -6,6 +6,7 @@ from tabulate import tabulate
 from source.auth import AuthManager
 from source.transactions import TransactionManager
 from source.reports import ReportGenerator
+from source.budget import BudgetManager
 from database import Database
 
 init()
@@ -77,5 +78,51 @@ class FinanceManager():
         ]
 
         print(tabulate(table_data, tablefmt="fancy_grid"))
+        
+
+    def show_budget_alerts(self, alerts):
+        if not alerts:
+            print(f"{Fore.GREEN} All budgets are within limits! {Style.RESET_ALL}")
+            return
+        
+        self.print_header("BUDGET ALERTS")
+        for alert in alerts:
+            if "exceeded" in alert.lower():
+                print(f"{Fore.RED}❌ {alert}{Style.RESET_ALL}")
+            elif "warning" in alert.lower():
+                print(f"{Fore.YELLOW}⚠️ {alert}{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.CYAN}ℹ️ {alert}{Style.RESET_ALL}")
+
+    
+    def main_menu(self):
+        self.clear_screen()
+        print(f"\n{Fore.CYAN} ================================= {Style.RESET_ALL}")
+        print(f"{Fore.YELLOW} PERSONAL FINANCE MANAGER {Style.RESET_ALL}")
+        print(f"\n{Fore.CYAN} ================================= {Style.RESET_ALL}")
+        print(f"\n{Fore.GREEN}1.{Style.RESET_ALL} Register")
+        print(f"\n{Fore.GREEN}2.{Style.RESET_ALL} Login")
+        print(f"\n{Fore.GREEN}3.{Style.RESET_ALL} Exit")
+
+
+    def user_menu(self):
+        self.clear_screen()
+        balance = ReportGenerator(self.user_id).get_total()
+        balance_color = Fore.GREEN if balance >= 0 else Fore.RED
+        print(f"\nWelcome, {Fore.YELLOW}{self.current_user}{Style.RESET_ALL}")
+        print(f"Current balance: {balance_color}${abs(balance):.2f}{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}1.{Style.RESET_ALL} Add Transaction")
+        print(f"{Fore.GREEN}2.{Style.RESET_ALL} View/Edit Transaction")
+        print(f"{Fore.GREEN}3.{Style.RESET_ALL} Financial Reports")
+        print(f"{Fore.GREEN}4.{Style.RESET_ALL} Budget Management")
+        print(f"{Fore.GREEN}5.{Style.RESET_ALL} Data tools")
+        print(f"{Fore.GREEN}6.{Style.RESET_ALL} Logout")
+
+        
+
+        
+
+
+
 
 
