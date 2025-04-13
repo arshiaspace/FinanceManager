@@ -1,5 +1,5 @@
 from datetime import datetime
-from database import Database
+from source.database import Database
 from decimal import Decimal
 
 class TransactionManager:
@@ -62,12 +62,5 @@ class TransactionManager:
                 print("No transaction found with that ID.")
 
 
-    def get_balance(self):
-        with self.db._get_cursor() as cursor:
-            cursor.execute('''SELECT 
-                           SUM (CASE WHEN type = 'income' THEN amount ELSE -amount END) 
-                           FROM transactions WHERE user_id = ?''', 
-                           (self.user_id))
-            balance = cursor.fetchone()[0]
-            return Decimal(balance) if balance is not None else Decimal('0')
+    
         

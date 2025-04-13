@@ -1,6 +1,6 @@
 import unittest
 import os
-from database import Database
+from source.database import Database
 import sqlite3
 from source.transactions import TransactionManager
 

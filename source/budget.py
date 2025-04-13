@@ -1,4 +1,4 @@
-from database import Database
+from source.database import Database
 from datetime import datetime
 from decimal import Decimal
 
@@ -54,59 +54,83 @@ class BudgetManager:
             return False
         
 
+    
     def check_budgets(self, month=None, year=None):
-        try: 
+        try:
             month = month or datetime.now().month
             year = year or datetime.now().year
 
             alerts = []
-            budgets = self.get_budget(month, year)
+            budgets = self.get_budgets(month, year)
+
+            if not budgets:
+                return ["No budgets set for this period."]
+
+            any_exceeded = False
+            any_warnings = False
 
             for budget in budgets:
                 category = budget['category']
-                spent = self.get_category_spending(category, month, year)
-                budget_amount = budget['amount']
+                spent = abs(Decimal(str(self.get_category_spending(category, month, year))))
+                budget_amount = Decimal(str(budget['amount']))
                 remaining = budget_amount - spent
 
                 if spent > budget_amount:
                     alerts.append(
-                        f"{category}: Exceeded by ${abs(remaining):.2f} "
+                        f"{category}: EXCEEDED by ${(spent - budget_amount):.2f} "
                         f"(Budget: ${budget_amount:.2f}, Spent: ${spent:.2f})"
-                        )
-                    
-                elif spent > 0.8 * budget_amount:
+                    )
+                    any_exceeded = True
+                elif spent > Decimal('0.8') * budget_amount:
                     alerts.append(
-                        f"{category}: Nearing limit."
+                        f"{category}: WARNING - Nearing limit. "
                         f"(${remaining:.2f} remaining)"
                     )
-                    
-            return alerts
-        
-        except Exception as error:
-            print(f"Error checking budgets: {str(error)}")
-            return []
-        
+                    any_warnings = True
+                else:
+                    alerts.append(
+                        f"{category}: Within budget. "
+                        f"(${remaining:.2f} remaining)"
+                    )
 
-    def get_budget(self, month, year):
-        with self.db._get_cursor() as cursor:
-            results = cursor.execute('''SELECT category, amount 
-                                     FROM budget WHERE user_id = ? AND month = ? AND year = ?''', 
-                                     (self.user_id, month, year)).fetchall()
+            if not any_exceeded and not any_warnings:
+                alerts.append("All budgets are within limits!")
             
+            return alerts
+
+        except Exception as error:
+            return [f"ERROR: Budget check failed - {str(error)}"]
+            
+
+    def get_budgets(self, month, year):
+        with self.db._get_cursor() as cursor:
+            results = cursor.execute('''
+                SELECT category, amount 
+                FROM budget
+                WHERE user_id = ? AND month = ? AND year = ?
+                ''',
+                (self.user_id, month, year)
+            ).fetchall()
+
             return [{
                 'category': row[0],
-                'amount': Decimal(row[1])
+                'amount': Decimal(str(row[1]))
             } for row in results]
-        
-    
-    def get_category_spending(self, category, month ,year):
+
+    def get_category_spending(self, category, month, year):
         start_date = f"{year}-{month:02d}-01"
         end_date = f"{year}-{month:02d}-31"
 
         with self.db._get_cursor() as cursor:
-            result = cursor.execute('''SELECT COALESCE(SUM(amount), 0)
-                                    FROM transactions WHERE user_id = ? AND TYPE = 'expense' 
-                                    AND category = ? AND BETWEEN ? AND ?)''',
-                                    (self.user_id, category, start_date, end_date)).fetchone()
-            return abs(float(result[0]))
-        
+            result = cursor.execute('''
+                SELECT COALESCE(SUM(amount), 0)
+                FROM transactions 
+                WHERE user_id = ? 
+                AND type = 'expense'
+                AND category = ? 
+                AND date BETWEEN ? AND ?
+                ''',
+                (self.user_id, category, start_date, end_date)
+            ).fetchone()
+            
+            return Decimal(str(result[0]))  # Ensure Decimal return type

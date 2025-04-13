@@ -7,7 +7,7 @@ from source.auth import AuthManager
 from source.transactions import TransactionManager
 from source.reports import ReportGenerator
 from source.budget import BudgetManager
-from database import Database
+from source.database import Database
 
 init()
 
@@ -70,15 +70,49 @@ class FinanceManager():
             print(f"Period: {report['month']}/{report['year']}")
         else:
             print(f"Period: {report['year']}")
-
+        
         table_data = [
             [f"{Fore.GREEN}Income{Style.RESET_ALL}", f"${report['income']:.2f}"],
             [f"{Fore.RED}Expenses{Style.RESET_ALL}", f"${report['expenses']:.2f}"],
-            [f"{Fore.BLUE}Net Balance{Style.RESET_ALL}", f"${report['balance']:.2f}"]
+            [f"{Fore.BLUE}Net Balance{Style.RESET_ALL}", f"${report['balance']:.2f}"],
+            [f"{Fore.MAGENTA}Savings Rate{Style.RESET_ALL}", f"{report.get('savings_rate', 0):.1f}%"]
         ]
 
         print(tabulate(table_data, tablefmt="fancy_grid"))
+
+
+
+    def _show_category_breakdown(self, breakdown):
+        period = ""
+        if breakdown['month']:
+            period = f"{breakdown['month']}/{breakdown['year']}"
+        else:
+            period = f"{breakdown['year']}"
         
+        print(f"\n=== Category Breakdown ===")
+        print(f"Period: {period}\n")
+        
+        print("=== INCOME ===")
+        if breakdown['income']:
+            for category, amount in breakdown['income'].items():
+                print(f"{category}: ${amount:.2f}")
+        else:
+            print("No income data")
+        
+        print("\n=== EXPENSES ===")
+        if breakdown['expenses']:
+            for category, amount in breakdown['expenses'].items():
+                print(f"{category}: ${amount:.2f}")
+        else:
+            print("No expense data")
+        
+        print("\n=== TOTALS ===")
+        total_income = sum(breakdown['income'].values()) if breakdown['income'] else 0
+        total_expenses = sum(breakdown['expenses'].values()) if breakdown['expenses'] else 0
+        print(f"Total Income: ${total_income:.2f}")
+        print(f"Total Expenses: ${total_expenses:.2f}")
+        print(f"Net Balance: ${total_income - total_expenses:.2f}")
+                
 
     def show_budget_alerts(self, alerts):
         if not alerts:
@@ -112,7 +146,7 @@ class FinanceManager():
         print(f"\nWelcome, {Fore.YELLOW}{self.current_user}{Style.RESET_ALL}")
         print(f"Current balance: {balance_color}${abs(balance):.2f}{Style.RESET_ALL}")
         print(f"{Fore.GREEN}1.{Style.RESET_ALL} Add Transaction")
-        print(f"{Fore.GREEN}2.{Style.RESET_ALL} View/Edit Transaction")
+        print(f"{Fore.GREEN}2.{Style.RESET_ALL} View Transactions")
         print(f"{Fore.GREEN}3.{Style.RESET_ALL} Financial Reports")
         print(f"{Fore.GREEN}4.{Style.RESET_ALL} Budget Management")
         print(f"{Fore.GREEN}5.{Style.RESET_ALL} Data tools")
@@ -185,8 +219,20 @@ class FinanceManager():
                     year = self.get_valid_input("Year: ", int)
                     report = report_gen.yearly_salary(year)
                 else:
-                    pass
-                self.show_report(report, "month" if report_choice == 1 else "year")
+                    print("\nBreakdown for:")
+                    print(f"{Fore.GREEN}1.{Style.RESET_ALL} Specific Month")
+                    print(f"{Fore.GREEN}2.{Style.RESET_ALL} Entire Year")
+                    period_choice = self.get_valid_input("Choose period (1-2): ", int, [1, 2])
+                    
+                    if period_choice == 1:
+                        month = self.get_valid_input("Month (1-12): ", int, range(1, 13))
+                        year = self.get_valid_input("Year: ", int)
+                        report = report_gen.category_breakdown(month, year)
+                    else:
+                        year = self.get_valid_input("Year: ", int)
+                        report = report_gen.category_breakdown(year=year)
+    
+                self.show_report(report, "month" if report_choice == 1 else "year" if report_choice == 2 else "category")
                 input("\nPress Enter to continue...")
 
             elif choice == 4:
@@ -218,7 +264,7 @@ class FinanceManager():
                 if data_choice == 1:
                     self.db.backup_data()
                 elif data_choice == 2:
-                    self.db.restor_data()
+                    self.db.restore_data()
                 else:
                     filename = input("Export filename (default: transactions.csv): ").strip() or "transactions.csv"
                     self.db.export_transactions(self.user_id, filename)
