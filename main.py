@@ -118,7 +118,129 @@ class FinanceManager():
         print(f"{Fore.GREEN}5.{Style.RESET_ALL} Data tools")
         print(f"{Fore.GREEN}6.{Style.RESET_ALL} Logout")
 
-        
+    def run(self):
+        while True:
+            self.main_menu()
+            choice=self.get_valid_input("Choose an option (1-3): ", int, [1, 2, 3])
+
+            if choice == 1:
+                if self.auth.register_user():
+                    print(f"{Fore.GREEN}Registration successful![{Style.RESET_ALL}")
+            
+            elif choice == 2:
+                self.current_user = self.auth.login_user()
+                if self.current_user:
+                    self.user_id=self.db.get_user_id(self.current_user)
+                    if self.user_id:
+                        self.user_session()
+                else:
+                    print(f"{Fore.RED}Error: User not found{Style.RESET_ALL}")
+            
+            elif choice == 3:
+                print(f"{Fore.YELLOW}Goodbye!{Style.RESET_ALL}")
+                sys.exit()
+    
+    def user_session(self):
+        trans_manager = TransactionManager(self.user_id)
+        report_gen = ReportGenerator(self.user_id)
+        budget_manager = BudgetManager(self.user_id)
+
+        while True:
+            self.user_menu()
+            choice = self.get_valid_input("Choose an option (1-6): ", int, range(1, 7))
+
+            if choice == 1:
+                self.clear_screen()
+                self.print_header("New Transaction")
+                trans_type = self.get_valid_input("Type(Income/Expense): ", str, ["income", "expense"])
+                category = input("Category: ").strip()
+                amount = self.get_valid_input("Amount: $", "decimal")
+                description = input("Descriptional(optional): ").strip()
+
+                if trans_manager.add_transaction(trans_type, category, amount, description):
+                    print(f"{Fore.GREEN}✓ Transaction recorded!{Style.RESET_ALL}")
+                input("\nPress Enter to continue...")
+
+            elif choice == 2:
+                self.clear_screen()
+                self.print_header("Your Transactions")
+                transactions = trans_manager.get_transactions()
+                self.show_transactions(transactions)
+
+                input("\nPress Enter to continue...")
+
+            elif choice == 3:
+                self.clear_screen()
+                self.print_header("Financial Reports")
+                print(f"{Fore.GREEN}1.{Style.RESET_ALL} Monthly Report")
+                print(f"{Fore.GREEN}2.{Style.RESET_ALL} Yearly Report")
+                print(f"{Fore.GREEN}3.{Style.RESET_ALL} Category Breakdown")
+                report_choice = self.get_valid_input("Choose report type (1-3): ", int, [1, 2, 3])
+
+                if report_choice == 1:
+                    month = self.get_valid_input("Month(1-12): ", int, range(1, 13))
+                    year = self.get_valid_input("Year: ", int)
+                    report = report_gen.monthly_salary(month, year)
+                elif report_choice == 2:
+                    year = self.get_valid_input("Year: ", int)
+                    report = report_gen.yearly_salary(year)
+                else:
+                    pass
+                self.show_report(report, "month" if report_choice == 1 else "year")
+                input("\nPress Enter to continue...")
+
+            elif choice == 4:
+                self.clear_screen()
+                self.print_header("Budget Tools")
+                print(f"{Fore.GREEN}1.{Style.RESET_ALL} Set Budget")
+                print(f"{Fore.GREEN}2.{Style.RESET_ALL} Check Budget Status")
+                budget_choice = self.get_valid_input("Choose an option (1-2): ", int, [1, 2])
+
+                if budget_choice == 1:
+                    category = input("Category: ").strip()
+                    amount = self.get_valid_input("Monthly budget: $", "decimal")
+                    budget_manager.set_budget(category, amount)
+                    print(f"{Fore.GREEN}✓ Budget Set!{Style.RESET_ALL}")
+                else:
+                    alerts = budget_manager.check_budgets()
+                    self.show_budget_alerts(alerts)
+
+                input("\nPress Enter to continue...")
+
+            elif choice == 5:
+                self.clear_screen()
+                self.print_header("Data Management")
+                print(f"{Fore.GREEN}1.{Style.RESET_ALL} Backup Data")
+                print(f"{Fore.GREEN}2.{Style.RESET_ALL} Restore Data")
+                print(f"{Fore.GREEN}3.{Style.RESET_ALL} Export Transactions")
+                data_choice = self.get_valid_input("Choose an option (1-3): ", int, [1, 2, 3])
+
+                if data_choice == 1:
+                    self.db.backup_data()
+                elif data_choice == 2:
+                    self.db.restor_data()
+                else:
+                    filename = input("Export filename (default: transactions.csv): ").strip() or "transactions.csv"
+                    self.db.export_transactions(self.user_id, filename)
+                    print(f"{Fore.GREEN}✓ Data exported to {filename}{Style.RESET_ALL}")
+
+                input("\nPress Enter to continue...")
+
+            elif choice == 6:
+                self.current_user = None
+                self.user_id = None
+                break
+
+
+if __name__ == "__main__":
+    app = FinanceManager()
+    app.run()
+
+
+
+
+
+
 
         
 
